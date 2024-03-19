@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+  db:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+  redis:
+    image: redis:7.0.7
+    volumes:
+      - redis_volume:/var/lib/redis/data:cached
+  web:
+    image: web
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+      - gems_volume:/gems:cached
+    ports:
+      - "3000:3000"
+    environment:
+      BUNDLE_PATH: /gems
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
+      DB_NAME: api
+      DB_HOST: db
+      PORT: 3000
+      SECRET_TOKEN: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      SECRET_KEY_BASE: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      JWT_SECRET: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      REDIS_URL: redis://redis:6379
+    command: bundle exec puma -C config/puma.rb -e development
+    tty: true
+    stdin_open: true
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - sidekiq
+  sidekiq:
+    image: web
+    platform: linux/arm64/v8
+    command: >
+      sh -c "bundle check || bundle install &&
+               bundle exec sidekiq"
+    depends_on:
+      - db
+      - redis
+    environment:
+      BUNDLE_PATH: /gems
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_PORT: 5432
+      DB_NAME: api
+      DB_HOST: db
+      PORT: 3000
+      SECRET_TOKEN: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      SECRET_KEY_BASE: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      JWT_SECRET: Wa4Kdu6hMt3tYKm4jb9p4vZUuc7jBVFw
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ./:/app
+      - gems_volume:/gems:cached
+    env_file:
+      - .env
+    tty: true
+    stdin_open: true
+volumes:
+  pgdata:
+  gems_volume:
+  redis_volume:
