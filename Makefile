@@ -16,6 +16,9 @@ run:
 bundle:
 	@docker-compose run --rm web bundle
 
+bundleinstall:
+	@docker-compose run --rm web bundle install
+
 rails:
 	@docker-compose run --rm web bin/rails ${ARGS}
 

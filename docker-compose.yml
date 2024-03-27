@@ -44,7 +44,7 @@ services:
       - sidekiq
   sidekiq:
     image: web
-    platform: linux/arm64/v8
+    platform: linux/amd64
     command: >
       sh -c "bundle check || bundle install &&
                bundle exec sidekiq"
